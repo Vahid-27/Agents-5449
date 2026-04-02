@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2563EB;
+  --color-primary-dark: #1D4ED8;
+  --color-primary-light: #EFF6FF;
+  --color-primary-border: #BFDBFE;
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #F9FAFB;
+  color: #111827;
+}
+
+.font-display {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Streaming text animation */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.streaming-cursor::after {
+  content: '▋';
+  animation: blink 1s infinite;
+  color: #2563EB;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #F3F4F6; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+/* Blog content styles */
+.blog-content h1 { font-size: 2rem; font-weight: 800; font-family: 'Plus Jakarta Sans', sans-serif; margin: 1.5rem 0 1rem; }
+.blog-content h2 { font-size: 1.5rem; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; margin: 1.5rem 0 0.75rem; color: #1E40AF; }
+.blog-content h3 { font-size: 1.2rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.blog-content p { margin-bottom: 1rem; line-height: 1.75; }
+.blog-content ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+.blog-content ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+.blog-content li { margin-bottom: 0.4rem; line-height: 1.6; }
+.blog-content strong { font-weight: 600; color: #111827; }
+.blog-content a { color: #2563EB; text-decoration: underline; }
+
+/* HTML output */
+.html-output { font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; }
+
+/* Progress line for pipeline */
+.pipeline-line {
+  position: absolute;
+  left: 19px;
+  top: 36px;
+  bottom: -12px;
+  width: 2px;
+  background: #E5E7EB;
+}
+.pipeline-line.active {
+  background: linear-gradient(to bottom, #2563EB, #E5E7EB);
+}
+.pipeline-line.done {
+  background: #16A34A;
+}
