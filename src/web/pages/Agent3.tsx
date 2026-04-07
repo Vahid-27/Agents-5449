@@ -1,9 +1,10 @@
 import { useBlogStore } from '../store/blogStore';
 import { streamAgentAPI, tryParseJSON } from '../lib/streaming';
+import { saveAgentOutput } from '../hooks/useSessionCache';
 import { AgentHeader } from '../components/AgentHeader';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { ScrollArea } from '../components/ui/scroll-area';
+import { AgentRunningCard } from '../components/AgentRunningCard';
 
 function KwBadge({ kw, color = 'blue' }: { kw: string; color?: string }) {
   const colors: Record<string, string> = {
@@ -26,19 +27,21 @@ export function Agent3() {
   const parsed = state?.parsedData;
 
   const run = () => {
+    const sid = store.sessionId;
     store.setCurrentAgent(3);
     store.setAgentStatus(3, 'running');
     store.setAgentOutput(3, '');
 
     streamAgentAPI(
       '/agent3/extract',
-      { topic: store.topic, competitorData: store.competitorData, audience: store.targetAudience, blogType: store.blogType },
+      { topic: store.topic, competitorData: store.competitorData, audience: store.targetAudience, blogType: store.blogType, productContext: store.productContext },
       (text) => store.setAgentOutput(3, text),
       (full) => {
         const p = tryParseJSON(full);
         store.setAgentParsed(3, p);
         if (p) store.setKeywordData(p);
         store.setAgentStatus(3, 'done');
+        if (sid) saveAgentOutput(sid, 3, full, p);
       },
       (err) => { store.setAgentStatus(3, 'error'); store.setAgentOutput(3, `Error: ${err}`); }
     );
@@ -65,15 +68,19 @@ export function Agent3() {
       )}
 
       {state?.status === 'running' && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-sm font-600 text-blue-700">Extracting keywords...</span>
-          </div>
-          <ScrollArea className="max-h-64">
-            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono">{state.output}</pre>
-          </ScrollArea>
-        </Card>
+        <AgentRunningCard
+          label="Extracting keyword universe…"
+          accent="blue"
+          outputLength={state.output?.length || 0}
+          steps={[
+            'Identifying primary target keyword',
+            'Extracting LSI & semantic variants',
+            'Finding long-tail opportunities',
+            'Mapping AEO question keywords',
+            'Generating GEO & voice search terms',
+            'Setting keyword density targets',
+          ]}
+        />
       )}
 
       {parsed && (

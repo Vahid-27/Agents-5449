@@ -1,9 +1,10 @@
 import { useBlogStore } from '../store/blogStore';
 import { streamAgentAPI, tryParseJSON } from '../lib/streaming';
+import { saveAgentOutput } from '../hooks/useSessionCache';
 import { AgentHeader } from '../components/AgentHeader';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { ScrollArea } from '../components/ui/scroll-area';
+import { AgentRunningCard } from '../components/AgentRunningCard';
 
 export function Agent7() {
   const store = useBlogStore();
@@ -11,19 +12,21 @@ export function Agent7() {
   const parsed = state?.parsedData;
 
   const run = () => {
+    const sid = store.sessionId;
     store.setCurrentAgent(7);
     store.setAgentStatus(7, 'running');
     store.setAgentOutput(7, '');
 
     streamAgentAPI(
       '/agent7/external-links',
-      { topic: store.topic, blogContent: store.blogDraft, audience: store.targetAudience },
+      { topic: store.topic, blogContent: store.blogDraft, audience: store.targetAudience, keywords: store.keywordData, productContext: store.productContext },
       (text) => store.setAgentOutput(7, text),
       (full) => {
         const p = tryParseJSON(full);
         store.setAgentParsed(7, p);
         if (p) store.setExternalLinksData(p);
         store.setAgentStatus(7, 'done');
+        if (sid) saveAgentOutput(sid, 7, full, p);
       },
       (err) => { store.setAgentStatus(7, 'error'); store.setAgentOutput(7, `Error: ${err}`); }
     );
@@ -51,15 +54,19 @@ export function Agent7() {
       )}
 
       {state?.status === 'running' && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-sm font-600 text-blue-700">Researching authoritative sources...</span>
-          </div>
-          <ScrollArea className="max-h-64">
-            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono">{state.output}</pre>
-          </ScrollArea>
-        </Card>
+        <AgentRunningCard
+          label="Researching external stats & authority sources…"
+          accent="emerald"
+          outputLength={state.output?.length || 0}
+          steps={[
+            'Identifying citation-worthy statistics',
+            'Finding industry reports & studies',
+            'Sourcing authority site backlink targets',
+            'Validating data credibility & recency',
+            'Mapping stats to content sections',
+            'Generating citation-ready references',
+          ]}
+        />
       )}
 
       {parsed && (

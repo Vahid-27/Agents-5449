@@ -1,9 +1,10 @@
 import { useBlogStore } from '../store/blogStore';
 import { streamAgentAPI, tryParseJSON } from '../lib/streaming';
+import { saveAgentOutput } from '../hooks/useSessionCache';
 import { AgentHeader } from '../components/AgentHeader';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { ScrollArea } from '../components/ui/scroll-area';
+import { AgentRunningCard } from '../components/AgentRunningCard';
 
 export function Agent6() {
   const store = useBlogStore();
@@ -11,19 +12,21 @@ export function Agent6() {
   const parsed = state?.parsedData;
 
   const run = () => {
+    const sid = store.sessionId;
     store.setCurrentAgent(6);
     store.setAgentStatus(6, 'running');
     store.setAgentOutput(6, '');
 
     streamAgentAPI(
       '/agent6/internal-links',
-      { blogContent: store.blogDraft, topic: store.topic, product: store.product, funnelStage: store.funnelStage },
+      { blogContent: store.blogDraft, topic: store.topic, product: store.product, funnelStage: store.funnelStage, productContext: store.productContext },
       (text) => store.setAgentOutput(6, text),
       (full) => {
         const p = tryParseJSON(full);
         store.setAgentParsed(6, p);
         if (p) store.setInternalLinksData(p);
         store.setAgentStatus(6, 'done');
+        if (sid) saveAgentOutput(sid, 6, full, p);
       },
       (err) => { store.setAgentStatus(6, 'error'); store.setAgentOutput(6, `Error: ${err}`); }
     );
@@ -66,15 +69,19 @@ export function Agent6() {
       )}
 
       {state?.status === 'running' && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-sm font-600 text-blue-700">Mapping internal links...</span>
-          </div>
-          <ScrollArea className="max-h-64">
-            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono">{state.output}</pre>
-          </ScrollArea>
-        </Card>
+        <AgentRunningCard
+          label="Mapping internal link strategy…"
+          accent="emerald"
+          outputLength={state.output?.length || 0}
+          steps={[
+            'Analysing funnel stage & content type',
+            'Identifying TOFU supporting content',
+            'Finding MOFU comparison pages',
+            'Mapping BOFU conversion pages',
+            'Generating anchor text suggestions',
+            'Prioritising link placement positions',
+          ]}
+        />
       )}
 
       {parsed && (

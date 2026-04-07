@@ -1,9 +1,10 @@
 import { useBlogStore } from '../store/blogStore';
 import { streamAgentAPI, tryParseJSON } from '../lib/streaming';
+import { saveAgentOutput } from '../hooks/useSessionCache';
 import { AgentHeader } from '../components/AgentHeader';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { ScrollArea } from '../components/ui/scroll-area';
+import { AgentRunningCard } from '../components/AgentRunningCard';
 
 export function Agent2() {
   const store = useBlogStore();
@@ -11,19 +12,21 @@ export function Agent2() {
   const parsed = state?.parsedData;
 
   const run = () => {
+    const sid = store.sessionId;
     store.setCurrentAgent(2);
     store.setAgentStatus(2, 'running');
     store.setAgentOutput(2, '');
 
     streamAgentAPI(
       '/agent2/analyze',
-      { topic: store.topic, audience: store.targetAudience, blogType: store.blogType },
+      { topic: store.topic, audience: store.targetAudience, blogType: store.blogType, productContext: store.productContext },
       (text) => store.setAgentOutput(2, text),
       (full) => {
         const p = tryParseJSON(full);
         store.setAgentParsed(2, p);
         if (p) store.setCompetitorData(p);
         store.setAgentStatus(2, 'done');
+        if (sid) saveAgentOutput(sid, 2, full, p);
       },
       (err) => { store.setAgentStatus(2, 'error'); store.setAgentOutput(2, `Error: ${err}`); }
     );
@@ -63,20 +66,19 @@ export function Agent2() {
       )}
 
       {state?.status === 'running' && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-sm font-600 text-blue-700">Searching across 6 platforms...</span>
-          </div>
-          <div className="flex gap-2 flex-wrap mb-4">
-            {['Google', 'ChatGPT', 'Grok', 'Perplexity', 'Gemini', 'Claude'].map(e => (
-              <span key={e} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded animate-pulse">{e}</span>
-            ))}
-          </div>
-          <ScrollArea className="max-h-64">
-            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono leading-relaxed">{state.output}</pre>
-          </ScrollArea>
-        </Card>
+        <AgentRunningCard
+          label="Analysing competitors across platforms…"
+          accent="violet"
+          outputLength={state.output?.length || 0}
+          steps={[
+            'Fetching Google SERP for topic',
+            'Scraping top-3 competitor pages via Jina',
+            'Analysing content depth & structure',
+            'Identifying gaps & winning angles',
+            'Evaluating keyword coverage',
+            'Building competitive strategy report',
+          ]}
+        />
       )}
 
       {parsed && (

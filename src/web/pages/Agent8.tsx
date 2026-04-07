@@ -1,9 +1,10 @@
 import { useBlogStore } from '../store/blogStore';
 import { streamAgentAPI, tryParseJSON } from '../lib/streaming';
+import { saveAgentOutput } from '../hooks/useSessionCache';
 import { AgentHeader } from '../components/AgentHeader';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { ScrollArea } from '../components/ui/scroll-area';
+import { AgentRunningCard } from '../components/AgentRunningCard';
 
 function ScoreBar({ label, score, max = 10 }: { label: string; score: number; max?: number }) {
   const pct = (score / max) * 100;
@@ -75,19 +76,21 @@ export function Agent8() {
   const parsed = state?.parsedData;
 
   const run = () => {
+    const sid = store.sessionId;
     store.setCurrentAgent(8);
     store.setAgentStatus(8, 'running');
     store.setAgentOutput(8, '');
 
     streamAgentAPI(
       '/agent8/audit',
-      { blogContent: store.blogDraft, topic: store.topic, keywords: store.keywordData, outline: store.outlineData },
+      { blogContent: store.blogDraft, topic: store.topic, keywords: store.keywordData, outline: store.outlineData, audience: store.targetAudience, blogType: store.blogType, productContext: store.productContext },
       (text) => store.setAgentOutput(8, text),
       (full) => {
         const p = tryParseJSON(full);
         store.setAgentParsed(8, p);
         if (p) store.setAuditData(p);
         store.setAgentStatus(8, 'done');
+        if (sid) saveAgentOutput(sid, 8, full, p);
       },
       (err) => { store.setAgentStatus(8, 'error'); store.setAgentOutput(8, `Error: ${err}`); }
     );
@@ -114,15 +117,19 @@ export function Agent8() {
       )}
 
       {state?.status === 'running' && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-sm font-600 text-blue-700">Auditing content...</span>
-          </div>
-          <ScrollArea className="max-h-64">
-            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono">{state.output}</pre>
-          </ScrollArea>
-        </Card>
+        <AgentRunningCard
+          label="Running full content audit…"
+          accent="orange"
+          outputLength={state.output?.length || 0}
+          steps={[
+            'Scoring SEO: keyword density & headings',
+            'Auditing AEO: featured snippet readiness',
+            'Checking GEO: local & voice search signals',
+            'Evaluating LLMO: AI citation readiness',
+            'Assessing E-E-A-T signals',
+            'Analysing readability & conversion',
+          ]}
+        />
       )}
 
       {parsed && (
@@ -195,7 +202,7 @@ export function Agent8() {
           <div className="flex justify-between items-center pt-2">
             <p className="text-sm text-gray-500">✓ Audit complete — {parsed.criticalIssues?.length} critical issues found</p>
             <Button onClick={() => store.setCurrentAgent(9)} className="bg-blue-600 hover:bg-blue-700 text-white font-600">
-              Next: Finalize Blog →
+              Next: Intent Check →
             </Button>
           </div>
         </div>

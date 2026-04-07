@@ -1,9 +1,10 @@
 import { useBlogStore } from '../store/blogStore';
 import { streamAgentAPI, tryParseJSON } from '../lib/streaming';
+import { saveAgentOutput } from '../hooks/useSessionCache';
 import { AgentHeader } from '../components/AgentHeader';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { ScrollArea } from '../components/ui/scroll-area';
+import { AgentRunningCard } from '../components/AgentRunningCard';
 
 export function Agent4() {
   const store = useBlogStore();
@@ -11,19 +12,21 @@ export function Agent4() {
   const parsed = state?.parsedData;
 
   const run = () => {
+    const sid = store.sessionId;
     store.setCurrentAgent(4);
     store.setAgentStatus(4, 'running');
     store.setAgentOutput(4, '');
 
     streamAgentAPI(
       '/agent4/outline',
-      { topic: store.topic, keywords: store.keywordData, competitorData: store.competitorData, audience: store.targetAudience, blogType: store.blogType },
+      { topic: store.topic, keywords: store.keywordData, competitorData: store.competitorData, audience: store.targetAudience, blogType: store.blogType, productContext: store.productContext },
       (text) => store.setAgentOutput(4, text),
       (full) => {
         const p = tryParseJSON(full);
         store.setAgentParsed(4, p);
         if (p) store.setOutlineData(p);
         store.setAgentStatus(4, 'done');
+        if (sid) saveAgentOutput(sid, 4, full, p);
       },
       (err) => { store.setAgentStatus(4, 'error'); store.setAgentOutput(4, `Error: ${err}`); }
     );
@@ -50,15 +53,19 @@ export function Agent4() {
       )}
 
       {state?.status === 'running' && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            <span className="text-sm font-600 text-blue-700">Building SEO outline...</span>
-          </div>
-          <ScrollArea className="max-h-64">
-            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono">{state.output}</pre>
-          </ScrollArea>
-        </Card>
+        <AgentRunningCard
+          label="Building SEO outline & strategy…"
+          accent="blue"
+          outputLength={state.output?.length || 0}
+          steps={[
+            'Crafting SEO-optimised title & meta description',
+            'Designing H2/H3 heading hierarchy',
+            'Planning AEO featured snippet sections',
+            'Structuring FAQ for voice search',
+            'Mapping internal link anchors',
+            'Finalising word count & schema plan',
+          ]}
+        />
       )}
 
       {parsed && (
