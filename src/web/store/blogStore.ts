@@ -144,7 +144,7 @@ export function getPersistedProduct(): ActiveProduct | null {
 }
 
 const defaultAgents = () => Object.fromEntries(
-  Array.from({ length: 11 }, (_, i) => [i, defaultAgentState()])
+  Array.from({ length: 14 }, (_, i) => [i, defaultAgentState()])
 );
 
 export const useBlogStore = create<BlogStore>((set, get) => ({
